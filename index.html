@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cobranza Or Barak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1a3a6b">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cobranza">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+         background:#eef1f5; color:#1a1a1a; font-size:16px; padding-bottom:90px; }
+
+  .top { background:#1a3a6b; color:#fff; padding:16px 18px 20px; }
+  .top .quien { font-size:13px; opacity:.8; }
+  .top .etq { font-size:12px; opacity:.75; margin-top:10px; text-transform:uppercase; letter-spacing:.5px; }
+  .top .saldo { font-size:38px; font-weight:700; line-height:1.1; }
+  .top .sub { font-size:13px; opacity:.8; }
+  .aviso-barra { padding:8px 18px; font-size:14px; color:#fff; display:none; }
+  .naranja { background:#e37400; }
+  .rojo { background:#d93025; }
+
+  .card { background:#fff; margin:12px; padding:16px; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  h3 { margin:0 0 12px; font-size:16px; }
+  label { display:block; font-size:13px; font-weight:600; color:#444; margin:14px 0 5px; }
+  label:first-of-type { margin-top:0; }
+  input, select { width:100%; padding:14px; font-size:17px; border:1.5px solid #ccd2da;
+                  border-radius:10px; background:#fff; font-family:inherit; }
+  input:focus, select:focus { outline:none; border-color:#1a73e8; }
+  input[readonly] { background:#f1f3f6; color:#555; }
+
+  .btn { display:block; width:100%; padding:16px; font-size:17px; font-weight:600;
+         border:none; border-radius:12px; margin-top:14px; cursor:pointer; font-family:inherit; }
+  .azul { background:#1a73e8; color:#fff; }
+  .verde { background:#25d366; color:#fff; }
+  .gris { background:#e4e8ee; color:#333; }
+  .negro { background:#333; color:#fff; }
+  .btn:disabled { opacity:.5; }
+
+  .resultados { max-height:260px; overflow-y:auto; margin-top:6px; }
+  .res { padding:13px; border-bottom:1px solid #eef1f5; cursor:pointer; }
+  .res:active { background:#eef4ff; }
+  .res small { color:#888; display:block; font-size:12px; margin-top:2px; }
+
+  .ops { display:flex; gap:8px; margin-top:8px; }
+  .op { flex:1; padding:12px 6px; text-align:center; font-size:13px; font-weight:600;
+        border:1.5px solid #ccd2da; border-radius:10px; background:#fff; cursor:pointer; }
+  .op.sel { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+
+  .nota { font-size:13px; color:#666; margin-top:8px; line-height:1.4; }
+  .error { background:#fce8e6; color:#c5221f; padding:12px; border-radius:10px; margin-top:12px; font-size:14px; }
+  .amarillo { background:#fef7e0; padding:13px; border-radius:10px; font-size:14px; line-height:1.45; margin-top:12px; }
+
+  .item { padding:12px 0; border-bottom:1px solid #eef1f5; font-size:15px; }
+  .item:last-child { border:none; }
+  .item .m { float:right; font-weight:600; }
+  .item small { color:#888; display:block; font-size:12px; }
+
+  .ent { padding:14px; border:1.5px solid #dde2e8; border-radius:12px; margin-bottom:10px; cursor:pointer; }
+  .ent:active { background:#eef4ff; }
+  .ent small { color:#888; display:block; margin-top:3px; font-size:13px; }
+  .fila { display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid #eef1f5; }
+  .fila:last-child { border:none; }
+  .dif { font-size:30px; font-weight:700; text-align:center; padding:14px 0; }
+
+  #exito { display:none; position:fixed; inset:0; background:#eef1f5; z-index:100; overflow-y:auto; padding:24px 16px; }
+  .ok { text-align:center; padding:16px 0; }
+  .ok .check { font-size:56px; }
+  .ok .folio { font-family:ui-monospace,monospace; font-size:20px; color:#1a3a6b; font-weight:700; }
+
+  .tabs { position:fixed; bottom:0; left:0; right:0; background:#fff; display:flex; border-top:1px solid #dde2e8; }
+  .tab { flex:1; padding:14px 4px 18px; text-align:center; font-size:12px; color:#888; cursor:pointer; }
+  .tab.act { color:#1a73e8; font-weight:600; }
+  .tab .ic { display:block; font-size:21px; margin-bottom:2px; }
+
+  .oculto { display:none !important; }
+  .cargando { text-align:center; padding:50px; color:#888; }
+  .pin-box { padding:40px 24px; text-align:center; }
+  .pin-box input { font-size:34px; text-align:center; letter-spacing:14px; padding:16px; }
+</style>
+</head>
+<body>
+
+<div class="cargando" id="cargando">Cargando…</div>
+
+<div id="pantPin" class="pin-box oculto">
+  <h2 style="margin-bottom:4px">Cobranza Or Barak</h2>
+  <p style="color:#666;margin-top:0">Hola, <b id="pinNombre"></b></p>
+  <label style="text-align:left">Tu PIN de 4 dígitos</label>
+  <input id="pin" type="tel" inputmode="numeric" maxlength="4" autocomplete="off">
+  <button class="btn azul" id="btnPin">Entrar</button>
+  <div id="errPin"></div>
+</div>
+
+<div id="sinToken" class="pin-box oculto">
+  <h2>Falta tu link</h2>
+  <p style="color:#666">Abre el link personal que te mandó el administrador.</p>
+</div>
+
+<div id="app" class="oculto">
+  <div class="top">
+    <div class="quien"><span id="quien"></span>
+      <span onclick="salir()" style="float:right;opacity:.85;cursor:pointer">Salir</span></div>
+    <div class="etq">Efectivo en tu poder</div>
+    <div class="saldo" id="saldo">$0</div>
+    <div class="sub" id="subSaldo"></div>
+  </div>
+  <div class="aviso-barra naranja" id="barraCola">⚠️ <span id="nPend">0</span> cobro(s) sin enviar</div>
+  <div class="aviso-barra rojo" id="barraOffline">📵 Sin conexión</div>
+
+  <!-- COBRAR -->
+  <div id="vCobrar">
+    <div class="card">
+      <h3>Nuevo cobro</h3>
+      <label>Donador</label>
+      <input id="busca" placeholder="Escribe parte del nombre…" autocomplete="off">
+      <div class="resultados" id="resultados"></div>
+
+      <div id="formCobro" class="oculto">
+        <label>Monto</label>
+        <input id="monto" type="number" inputmode="decimal" placeholder="0">
+        <label>Moneda</label>
+        <select id="moneda"><option value="MXN">Pesos (MXN)</option><option value="USD">Dólares (USD)</option></select>
+
+        <label>Concepto</label>
+        <select id="concepto"></select>
+        <div class="nota" id="avisoConcepto"></div>
+        <div id="bloqueOtro" class="oculto">
+          <button class="btn gris" style="margin-top:8px;font-size:14px;padding:11px" onclick="verOtros()">
+            No es ninguno de estos — ver todos</button>
+        </div>
+
+        <label>Correo del donador
+          <span id="lnkCambiar" class="oculto" onclick="cambiarCorreo()"
+                style="float:right;color:#1a73e8;font-weight:600;cursor:pointer">✏️ Cambiar</span></label>
+        <input id="correo" type="email" inputmode="email" placeholder="correo@ejemplo.com" autocomplete="off">
+        <div class="ops">
+          <div class="op" data-op="Capturado">Lo di</div>
+          <div class="op" data-op="Ya tenía">Ya está</div>
+          <div class="op" data-op="No quiso">No quiso</div>
+        </div>
+        <div class="nota" id="avisoCorreo"></div>
+
+        <div id="bloqueTel" class="oculto">
+          <label>Teléfono (no lo tenemos registrado)</label>
+          <input id="telefono" type="tel" inputmode="tel" placeholder="55 1234 5678">
+        </div>
+
+        <button class="btn azul" id="btnGuardar">Registrar cobro</button>
+        <button class="btn gris" onclick="limpiar()">Cancelar</button>
+      </div>
+      <div id="errCobro"></div>
+    </div>
+  </div>
+
+  <!-- ENTREGAR -->
+  <div id="vEntregar" class="oculto">
+    <div class="card">
+      <h3>Entregar el efectivo</h3>
+      <p class="nota">Se entrega <b>todo</b> lo que traes. El encargado lo cuenta y confirma.</p>
+      <div id="listaPend"></div>
+      <button class="btn azul" id="btnEntregar">Declarar entrega</button>
+      <div id="errEntrega"></div>
+    </div>
+  </div>
+
+  <!-- RECIBIR -->
+  <div id="vRecibir" class="oculto">
+    <div class="card" id="recLista">
+      <h3>Entregas por recibir</h3>
+      <div id="listaEnt"></div>
+    </div>
+    <div class="card oculto" id="recContar">
+      <h3 id="tituloContar"></h3>
+      <div id="datosEnt" style="color:#666;font-size:14px"></div>
+      <div class="amarillo"><b>Cuenta el dinero primero.</b><br>
+        Lo que declaró el cobrador aparece hasta que registres tu conteo.</div>
+      <label>¿Cuánto contaste en pesos?</label>
+      <input id="contMXN" type="number" inputmode="decimal"
+             style="font-size:32px;text-align:center;font-weight:700;padding:18px" placeholder="0">
+      <div id="bloqueUSD" class="oculto">
+        <label>¿Y en dólares?</label>
+        <input id="contUSD" type="number" inputmode="decimal" placeholder="0">
+      </div>
+      <label>Notas (opcional)</label>
+      <input id="notasEnt" placeholder="Ej. venían 3 billetes rotos">
+      <button class="btn azul" id="btnConfirmar">Confirmar mi conteo</button>
+      <button class="btn gris" onclick="volverRec()">Cancelar</button>
+      <div id="errContar"></div>
+    </div>
+    <div class="card oculto" id="recResultado">
+      <h3 id="tituloRes"></h3>
+      <div class="fila"><span>Declaró el cobrador</span><b id="rDec"></b></div>
+      <div class="fila"><span>Contaste tú</span><b id="rCont"></b></div>
+      <div class="dif" id="rDif"></div>
+      <div id="rNota"></div>
+      <button class="btn azul" onclick="volverRec()">Listo</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab act" id="tCobrar" onclick="ver('cobrar')"><span class="ic">💵</span>Cobrar</div>
+    <div class="tab" id="tEntregar" onclick="ver('entregar')"><span class="ic">📦</span>Entregar</div>
+    <div class="tab oculto" id="tRecibir" onclick="ver('recibir')"><span class="ic">🧾</span>Recibir</div>
+  </div>
+</div>
+
+<div id="exito">
+  <div class="card">
+    <div class="ok">
+      <div class="check">✅</div>
+      <div style="font-size:18px;margin:6px 0"><b id="okNombre"></b></div>
+      <div style="font-size:30px;font-weight:700" id="okMonto"></div>
+      <div class="folio" id="okFolio"></div>
+    </div>
+    <div id="okCorreo" class="nota" style="text-align:center"></div>
+    <button class="btn negro" id="btnImprimir">🖨️ Imprimir recibo</button>
+    <a id="okWa" href="#"><button class="btn verde">📲 Mandar por WhatsApp</button></a>
+    <button class="btn gris" onclick="cerrarExito()">Listo, siguiente cobro</button>
+    <div id="errImpr"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
