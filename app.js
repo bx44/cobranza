@@ -4,7 +4,7 @@
  * Pega aquí la URL /exec de tu Apps Script. Es lo único
  * que hay que cambiar al reimplementar el backend.
  * ============================================================ */
-var API = 'https://script.google.com/macros/s/AKfycbxOOSNUEaEQbDjratqEVT5RJUdvlZCGCzMqqLzT4xtO-AlCn-gSkH5vpvLeLpRYl-Z8/exec';
+var API = 'PEGA_AQUI_TU_URL_EXEC';
 
 var TK = '', D = { conceptos: [], saldo: { mxn:0, usd:0, cobros:0 }, pendientes: [] };
 var sel = null, hits = [], opMail = '', forzando = false, reemplazando = false;
@@ -22,8 +22,22 @@ function api(fn, params) {
     }
   }
   return fetch(url, { method: 'GET', redirect: 'follow' })
-    .then(function (r) { return r.json(); })
-    .then(function (j) {
+    .then(function (r) { return r.text(); })
+    .then(function (t) {
+      // Si Google devuelve una pantalla de login o de error, llega HTML.
+      // Sin esto el mensaje sería "Unexpected token '<'", que no dice nada.
+      if (t.charAt(0) === '<') {
+        if (t.indexOf('accounts.google.com') >= 0 || t.indexOf('ServiceLogin') >= 0) {
+          throw new Error('El servidor pide iniciar sesión con Google.\n\n' +
+            'La app está publicada como "Cualquier usuario CON CUENTA DE GOOGLE". ' +
+            'Hay que cambiarla a "Cualquier usuario".');
+        }
+        throw new Error('El servidor respondió con una página, no con datos. ' +
+          'Revisa que la URL de la API sea la correcta y termine en /exec.');
+      }
+      var j;
+      try { j = JSON.parse(t); }
+      catch (e) { throw new Error('Respuesta inesperada del servidor.'); }
       if (!j.ok) throw new Error(j.error || 'Error del servidor');
       return j.data;
     });
