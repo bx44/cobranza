@@ -45,6 +45,70 @@
 </div>
 
 <script>
+/* Pega aqui la misma URL /exec que pusiste en app.js */
+var API = 'PEGA_AQUI_TU_URL_EXEC';
+
+var q = new URL(location.href).searchParams;
+var folio = q.get('f'), codigo = q.get('c');
+var c = document.getElementById('cuerpo');
+
+function falla(titulo, detalle) {
+  c.innerHTML = '<div class="estado mal">' + titulo + '</div>' +
+    '<p style="color:#666;text-align:center;line-height:1.5">' + detalle + '</p>' +
+    (folio ? '<div class="fila"><span>Folio</span><b>' + folio + '</b></div>' : '');
+}
+
+if (API.indexOf('https://') !== 0) {
+  falla('Falta configurar la app',
+        'La URL de la API no esta puesta en <code>v.html</code>. ' +
+        'Tiene que ser la misma que en <code>app.js</code>, terminada en <code>/exec</code>.');
+} else if (!folio || !codigo) {
+  falla('Link incompleto', 'Escanea el codigo QR completo de tu recibo.');
+} else {
+  fetch(API + '?fn=verificar&f=' + encodeURIComponent(folio) + '&c=' + encodeURIComponent(codigo))
+    .then(function (r) { return r.text(); })
+    .then(function (t) {
+      if (t.charAt(0) === '<') {
+        throw new Error('El servidor respondio con una pagina en vez de datos. ' +
+          'Revisa que la app este publicada como "Cualquier usuario".');
+      }
+      var j = JSON.parse(t);
+      if (!j.ok) throw new Error(j.error);
+      var d = j.data;
+      c.innerHTML =
+        '<div class="estado ok">&#10003; Recibo valido</div>' +
+        '<div class="monto">' + d.monto + '</div>' +
+        '<div class="fila"><span>Donador</span><b>' + d.donador + '</b></div>' +
+        (d.concepto ? '<div class="fila"><span>Concepto</span><b>' + d.concepto + '</b></div>' : '') +
+        '<div class="fila"><span>Fecha</span><b>' + d.fecha + '</b></div>' +
+        '<div class="fila"><span>Folio</span><b>' + d.folio + '</b></div>' +
+        (d.recibio ? '<div class="fila"><span>Recibio</span><b>' + d.recibio + '</b></div>' : '');
+    })
+    .catch(function (e) {
+      var m = e.message || String(e);
+      if (m.indexOf('Failed to fetch') >= 0 || m.indexOf('NetworkError') >= 0) {
+        falla('Sin conexion con el servidor',
+              'No se pudo llegar a la API. Revisa que la URL en <code>v.html</code> ' +
+              'sea correcta y que haya senal.');
+      } else {
+        falla('No pudimos verificarlo', m);
+      }
+    });
+}
+</script>
+</body>
+</html>
+  </div>
+  <div class="cuerpo" id="cuerpo">
+    <div class="cargando">Verificando…</div>
+  </div>
+  <div class="pie">
+    Este comprobante confirma la recepción del donativo. No es un CFDI.<br>
+    ¿Alguna duda? 55 3989 6174
+  </div>
+</div>
+
+<script>
 var API = 'https://script.google.com/macros/s/AKfycbxOOSNUEaEQbDjratqEVT5RJUdvlZCGCzMqqLzT4xtO-AlCn-gSkH5vpvLeLpRYl-Z8/exec';
 
 var q = new URL(location.href).searchParams;
