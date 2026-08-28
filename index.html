@@ -98,7 +98,15 @@
 
 <div id="sinToken" class="pin-box oculto">
   <h2>Falta tu link</h2>
-  <p style="color:#666">Abre el link personal que te mandó el administrador.</p>
+  <p style="color:#666">Abre el link personal que te mandó el administrador.<br>
+     Termina en <code>?t=</code> seguido de una clave larga.</p>
+  <div style="margin-top:24px;border-top:1px solid #dde2e8;padding-top:20px">
+    <p style="color:#666;font-size:14px">¿Lo perdiste? Pega aquí tu clave de acceso:</p>
+    <input id="tokenManual" placeholder="clave de acceso" autocomplete="off"
+           style="font-family:ui-monospace,monospace;font-size:14px">
+    <button class="btn azul" onclick="usarToken()">Entrar</button>
+    <div id="errToken"></div>
+  </div>
 </div>
 
 <div id="app" class="oculto">
@@ -225,6 +233,7 @@
   </div>
 </div>
 
+<script src="logo.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

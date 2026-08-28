@@ -4,7 +4,7 @@
  * Pega aquí la URL /exec de tu Apps Script. Es lo único
  * que hay que cambiar al reimplementar el backend.
  * ============================================================ */
-var API = 'https://script.google.com/macros/s/AKfycbxOOSNUEaEQbDjratqEVT5RJUdvlZCGCzMqqLzT4xtO-AlCn-gSkH5vpvLeLpRYl-Z8/exec';
+var API = 'PEGA_AQUI_TU_URL_EXEC';
 
 var TK = '', D = { conceptos: [], saldo: { mxn:0, usd:0, cobros:0 }, pendientes: [] };
 var sel = null, hits = [], opMail = '', forzando = false, reemplazando = false;
@@ -62,6 +62,23 @@ function mostrar(id) {
     document.getElementById(x).classList.toggle('oculto', x !== id);
   });
   if (id === 'cargando') document.getElementById('cargando').classList.remove('oculto');
+}
+
+function usarToken() {
+  var t = document.getElementById('tokenManual').value.trim();
+  var err = document.getElementById('errToken');
+  err.innerHTML = '';
+  if (t.length < 20) {
+    err.innerHTML = '<div class="error">Esa clave se ve incompleta.</div>';
+    return;
+  }
+  TK = t;
+  api('ping', {})
+    .then(function () { localStorage.setItem('token', t); pedirPin(); })
+    .catch(function (e) {
+      err.innerHTML = '<div class="error">' + e.message + '</div>';
+      TK = '';
+    });
 }
 
 function pedirPin() {
@@ -326,7 +343,7 @@ function exito(r, d) {
   if (d.telNuevo && !sel.t) sel.t = true;
 
   ultimoCobro = { nombre:d.nombre, mxn:d.mxn, usd:d.usd, concepto:d.concepto,
-                  folio:r.folio, cobrador:D.yo.nombre };
+                  folio:r.folio, cobrador:D.yo.nombre, urlQR:r.urlQR || '' };
 
   document.getElementById('okNombre').textContent = d.nombre;
   document.getElementById('okMonto').textContent = '$' + (d.mxn || d.usd).toLocaleString('es-MX');
@@ -537,7 +554,16 @@ document.getElementById('btnImprimir').onclick = function () {
 
 function imprimir(c) {
   return conectarImpresora().then(function (car) {
-    return enviarBytes(car, ticketESCPOS(c));
+    return bytesLogo().then(function (logo) {
+      // El logo va aparte: centrado, y luego el texto
+      var pre = new Uint8Array([27, 64, 27, 97, 1]);   // reset + centrar
+      return enviarBytes(car, pre)
+        .then(function () { return enviarBytes(car, logo); })
+        .then(function () { return enviarBytes(car, ticketESCPOS(c)); });
+    }).catch(function () {
+      // Si el logo falla por lo que sea, el recibo sale igual
+      return enviarBytes(car, ticketESCPOS(c));
+    });
   });
 }
 
@@ -582,13 +608,9 @@ function ticketESCPOS(c) {
 
   var out = [];
   var ESC = 27, GS = 29;
-  out.push(ESC, 64);              // reset
-  out.push(ESC, 116, 16);         // codepage 1252 (acentos)
+  out.push(ESC, 116, 16);         // codepage 1252 para acentos
   out.push(ESC, 97, 1);           // centrado
-  out.push(ESC, 33, 48);          // doble alto y ancho
-  txt(out, 'OR BARAK\n');
-  out.push(ESC, 33, 0);
-  txt(out, 'Comprobante de donativo\n');
+  txt(out, 'RECIBO DE DONATIVO\n');
   txt(out, '--------------------------------\n');
   out.push(ESC, 97, 0);           // izquierda
   txt(out, 'Donador:\n' + c.nombre + '\n\n');
@@ -601,11 +623,41 @@ function ticketESCPOS(c) {
   out.push(ESC, 33, 32);          // doble ancho
   txt(out, monto + '\n');
   out.push(ESC, 33, 0);
+
+  if (c.urlQR) {
+    txt(out, '\nVerifique este recibo:\n');
+    qrESCPOS(out, c.urlQR);
+    txt(out, 'Escanee el codigo\n');
+  }
+
   txt(out, '\nTizku lemitzvot\n');
   txt(out, 'Este comprobante no es un CFDI\n');
+  txt(out, 'Or Barak - 55 3989 6174\n');
   txt(out, '\n\n\n');
   out.push(GS, 86, 66, 0);        // corte
   return new Uint8Array(out);
+}
+
+/**
+ * QR nativo de la impresora (comandos GS ( k).
+ * Sale mucho mas nitido que mandarlo como imagen, y pesa nada.
+ */
+function qrESCPOS(out, texto) {
+  var GS = 29;
+  var datos = [];
+  txt(datos, texto);
+
+  // tamano del modulo: 6 de 1-16
+  out.push(GS, 40, 107, 3, 0, 49, 67, 6);
+  // correccion de error nivel H (el mas alto): aguanta papel arrugado
+  out.push(GS, 40, 107, 3, 0, 49, 69, 51);
+  // guardar los datos
+  var len = datos.length + 3;
+  out.push(GS, 40, 107, len & 0xFF, (len >> 8) & 0xFF, 49, 80, 48);
+  for (var i = 0; i < datos.length; i++) out.push(datos[i]);
+  // imprimir
+  out.push(GS, 40, 107, 3, 0, 49, 81, 48);
+  txt(out, '\n');
 }
 
 /** Texto a bytes en Windows-1252, para que salgan los acentos. */

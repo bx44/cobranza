@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Verificar recibo — Or Barak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2c2a5a">
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+         background:#f2f3f7; color:#1a1a1a; display:flex; align-items:center;
+         justify-content:center; min-height:100vh; padding:20px; }
+  .caja { background:#fff; border-radius:16px; max-width:400px; width:100%;
+          box-shadow:0 2px 14px rgba(0,0,0,.08); overflow:hidden; }
+  .cab { background:#2c2a5a; color:#fff; padding:22px; text-align:center; }
+  .cab h1 { margin:0; font-size:22px; letter-spacing:.5px; }
+  .cab p { margin:4px 0 0; opacity:.85; font-size:13px; }
+  .cuerpo { padding:22px; }
+  .estado { text-align:center; padding:14px; border-radius:11px; margin-bottom:18px; font-weight:600; }
+  .ok { background:#e6f4ea; color:#137333; }
+  .mal { background:#fce8e6; color:#c5221f; }
+  .fila { display:flex; justify-content:space-between; gap:14px;
+          padding:12px 0; border-bottom:1px solid #eef1f5; font-size:15px; }
+  .fila:last-child { border:none; }
+  .fila span { color:#777; flex-shrink:0; }
+  .fila b { text-align:right; }
+  .monto { text-align:center; font-size:32px; font-weight:700; color:#2c2a5a; padding:14px 0; }
+  .pie { padding:16px 22px; background:#f8f9fb; font-size:12px; color:#888; line-height:1.5; }
+  .cargando { text-align:center; padding:40px; color:#888; }
+</style>
+</head>
+<body>
+<div class="caja">
+  <div class="cab">
+    <h1>OR BARAK</h1>
+    <p>Verificación de recibo</p>
+  </div>
+  <div class="cuerpo" id="cuerpo">
+    <div class="cargando">Verificando…</div>
+  </div>
+  <div class="pie">
+    Este comprobante confirma la recepción del donativo. No es un CFDI.<br>
+    ¿Alguna duda? 55 3989 6174
+  </div>
+</div>
+
+<script>
+var API = 'PEGA_AQUI_TU_URL_EXEC';
+
+var q = new URL(location.href).searchParams;
+var folio = q.get('f'), codigo = q.get('c');
+var c = document.getElementById('cuerpo');
+
+if (!folio || !codigo) {
+  c.innerHTML = '<div class="estado mal">Link incompleto</div>' +
+    '<p style="color:#666;text-align:center">Escanea el código QR de tu recibo.</p>';
+} else {
+  fetch(API + '?fn=verificar&f=' + encodeURIComponent(folio) + '&c=' + encodeURIComponent(codigo))
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j.ok) throw new Error(j.error);
+      var d = j.data;
+      c.innerHTML =
+        '<div class="estado ok">✓ Recibo válido</div>' +
+        '<div class="monto">' + d.monto + '</div>' +
+        '<div class="fila"><span>Donador</span><b>' + d.donador + '</b></div>' +
+        (d.concepto ? '<div class="fila"><span>Concepto</span><b>' + d.concepto + '</b></div>' : '') +
+        '<div class="fila"><span>Fecha</span><b>' + d.fecha + '</b></div>' +
+        '<div class="fila"><span>Folio</span><b>' + d.folio + '</b></div>' +
+        (d.recibio ? '<div class="fila"><span>Recibió</span><b>' + d.recibio + '</b></div>' : '');
+    })
+
+    .catch(function (e) {
+      c.innerHTML = '<div class="estado mal">No pudimos verificarlo</div>' +
+        '<p style="color:#666;text-align:center">' + e.message + '</p>';
+    });
+}
+</script>
+</body>
+</html>
