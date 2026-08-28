@@ -46,7 +46,7 @@
 
 <script>
 /* Pega aqui la misma URL /exec que pusiste en app.js */
-var API = 'PEGA_AQUI_TU_URL_EXEC';
+var API = 'https://script.google.com/macros/s/AKfycbxOOSNUEaEQbDjratqEVT5RJUdvlZCGCzMqqLzT4xtO-AlCn-gSkH5vpvLeLpRYl-Z8/exec';
 
 var q = new URL(location.href).searchParams;
 var folio = q.get('f'), codigo = q.get('c');
@@ -93,50 +93,6 @@ if (API.indexOf('https://') !== 0) {
       } else {
         falla('No pudimos verificarlo', m);
       }
-    });
-}
-</script>
-</body>
-</html>
-  </div>
-  <div class="cuerpo" id="cuerpo">
-    <div class="cargando">Verificando…</div>
-  </div>
-  <div class="pie">
-    Este comprobante confirma la recepción del donativo. No es un CFDI.<br>
-    ¿Alguna duda? 55 3989 6174
-  </div>
-</div>
-
-<script>
-var API = 'https://script.google.com/macros/s/AKfycbxOOSNUEaEQbDjratqEVT5RJUdvlZCGCzMqqLzT4xtO-AlCn-gSkH5vpvLeLpRYl-Z8/exec';
-
-var q = new URL(location.href).searchParams;
-var folio = q.get('f'), codigo = q.get('c');
-var c = document.getElementById('cuerpo');
-
-if (!folio || !codigo) {
-  c.innerHTML = '<div class="estado mal">Link incompleto</div>' +
-    '<p style="color:#666;text-align:center">Escanea el código QR de tu recibo.</p>';
-} else {
-  fetch(API + '?fn=verificar&f=' + encodeURIComponent(folio) + '&c=' + encodeURIComponent(codigo))
-    .then(function (r) { return r.json(); })
-    .then(function (j) {
-      if (!j.ok) throw new Error(j.error);
-      var d = j.data;
-      c.innerHTML =
-        '<div class="estado ok">✓ Recibo válido</div>' +
-        '<div class="monto">' + d.monto + '</div>' +
-        '<div class="fila"><span>Donador</span><b>' + d.donador + '</b></div>' +
-        (d.concepto ? '<div class="fila"><span>Concepto</span><b>' + d.concepto + '</b></div>' : '') +
-        '<div class="fila"><span>Fecha</span><b>' + d.fecha + '</b></div>' +
-        '<div class="fila"><span>Folio</span><b>' + d.folio + '</b></div>' +
-        (d.recibio ? '<div class="fila"><span>Recibió</span><b>' + d.recibio + '</b></div>' : '');
-    })
-
-    .catch(function (e) {
-      c.innerHTML = '<div class="estado mal">No pudimos verificarlo</div>' +
-        '<p style="color:#666;text-align:center">' + e.message + '</p>';
     });
 }
 </script>
