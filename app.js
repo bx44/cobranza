@@ -4,7 +4,7 @@
  * Pega aquí la URL /exec de tu Apps Script. Es lo único
  * que hay que cambiar al reimplementar el backend.
  * ============================================================ */
-var API = 'PEGA_AQUI_TU_URL_EXEC';
+var API = 'https://script.google.com/macros/s/AKfycbxOOSNUEaEQbDjratqEVT5RJUdvlZCGCzMqqLzT4xtO-AlCn-gSkH5vpvLeLpRYl-Z8/exec';
 
 var TK = '', D = { conceptos: [], saldo: { mxn:0, usd:0, cobros:0 }, pendientes: [] };
 var sel = null, hits = [], opMail = '', forzando = false, reemplazando = false;
