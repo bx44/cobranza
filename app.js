@@ -378,6 +378,11 @@ function exito(r, d) {
   else { wa.classList.add('oculto'); }
 
   document.getElementById('btnImprimir').classList.toggle('oculto', !('bluetooth' in navigator));
+  // Diagnostico visible: si dice "sin QR", el dato no llego del servidor
+  if (!r.urlQR) {
+    m.innerHTML += '<br><span style="color:#e37400">El ticket saldra sin QR ' +
+      '(el servidor no mando la URL)</span>';
+  }
   document.getElementById('exito').style.display = 'block';
 }
 
@@ -641,7 +646,13 @@ function ticketESCPOS(c) {
   if (c.urlQR) {
     txt(out, '\nDudas sobre este recibo?\n');
     qrESCPOS(out, c.urlQR);
-    txt(out, 'Escanee y escribanos\n');
+    // Respaldo: si la impresora ignora el comando de QR, al menos sale
+    // el numero al que escribir. Tambien sirve de diagnostico: si ves
+    // esta linea pero no el cuadro, la impresora no soporta GS ( k.
+    txt(out, 'Escanee o escriba al\n');
+    txt(out, '55 6572 871690\n');
+  } else {
+    txt(out, '\nDudas? WhatsApp 55 6572 871690\n');
   }
 
   txt(out, '\nTizku lemitzvot\n');
