@@ -639,9 +639,9 @@ function ticketESCPOS(c) {
   out.push(ESC, 33, 0);
 
   if (c.urlQR) {
-    txt(out, '\nVerifique este recibo:\n');
+    txt(out, '\nDudas sobre este recibo?\n');
     qrESCPOS(out, c.urlQR);
-    txt(out, 'Escanee el codigo\n');
+    txt(out, 'Escanee y escribanos\n');
   }
 
   txt(out, '\nTizku lemitzvot\n');
