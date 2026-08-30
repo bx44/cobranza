@@ -249,16 +249,39 @@ function setAviso(id, txt, color) {
 function cargarConceptos() {
   var s = document.getElementById('concepto');
   var propios = sel.conceptos || [];
+  var faltan = sel.faltan || [];
+  var saldados = sel.saldados || [];
   forzando = false;
 
   if (propios.length) {
+    // Cada opcion muestra cuanto le falta: el cobrador sabe cuanto pedir
     s.innerHTML = '<option value="">— elige el concepto —</option>' +
-      propios.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
+      propios.map(function (c, i) {
+        var f = faltan[i];
+        var etq = f > 0 ? c + '  (faltan $' + Math.round(f).toLocaleString('es-MX') + ')' : c;
+        return '<option value="' + c + '">' + etq + '</option>';
+      }).join('');
     setAviso('avisoConcepto', propios.length === 1
-      ? 'Es su único donativo abierto.'
-      : 'Tiene ' + propios.length + ' donativos abiertos. Pregúntale por cuál está pagando.', '#666');
-    document.getElementById('bloqueOtro').classList.remove('oculto');
+      ? 'Es su único donativo con saldo.'
+      : 'Tiene ' + propios.length + ' donativos con saldo. Pregúntale por cuál está pagando.', '#666');
     if (propios.length === 1) s.selectedIndex = 1;
+
+    var b = document.getElementById('bloqueOtro');
+    b.classList.remove('oculto');
+    b.querySelector('button').textContent = saldados.length
+      ? 'Ver también los ' + saldados.length + ' ya pagados'
+      : 'No es ninguno de estos — ver todos';
+
+  } else if (saldados.length) {
+    // Todo pagado: no se le ofrece nada por defecto
+    s.innerHTML = '<option value="">— elige el concepto —</option>';
+    setAviso('avisoConcepto',
+      '✅ Ya pagó todos sus donativos (' + saldados.join(', ') + '). ' +
+      'Si quiere dar de más, usa el botón de abajo.', '#188038');
+    var b2 = document.getElementById('bloqueOtro');
+    b2.classList.remove('oculto');
+    b2.querySelector('button').textContent = 'Quiere dar de más — ver opciones';
+
   } else {
     s.innerHTML = '<option value="">— elige el concepto —</option>' +
       D.conceptos.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
@@ -269,12 +292,29 @@ function cargarConceptos() {
 }
 
 function verOtros() {
-  if (!confirm('Los conceptos de abajo NO están entre sus donativos comprometidos.\n\n' +
-               'Si eliges uno, el cobro va a quedar marcado como ERROR en el sistema.\n\n¿Seguir?')) return;
   var s = document.getElementById('concepto');
-  s.innerHTML = '<option value="">— elige el concepto —</option>' +
-    D.conceptos.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
-  setAviso('avisoConcepto', '⚠️ Lista general — quedará marcado como ERROR.', '#d93025');
+  var saldados = sel.saldados || [];
+  var propios = sel.conceptos || [];
+
+  var opciones = '<option value="">— elige el concepto —</option>';
+  if (propios.length) {
+    opciones += '<optgroup label="Con saldo">' +
+      propios.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('') +
+      '</optgroup>';
+  }
+  if (saldados.length) {
+    opciones += '<optgroup label="Ya pagados">' +
+      saldados.map(function (c) { return '<option value="' + c + '">' + c + ' (pagado)</option>'; }).join('') +
+      '</optgroup>';
+  }
+  opciones += '<optgroup label="Otros conceptos">' +
+    D.conceptos.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('') +
+    '</optgroup>';
+
+  s.innerHTML = opciones;
+  setAviso('avisoConcepto',
+    'Los de "Ya pagados" ya están saldados: lo que registres es un abono extra. ' +
+    'Los de "Otros conceptos" no están entre sus donativos y quedarán marcados como ERROR.', '#e37400');
   document.getElementById('bloqueOtro').classList.add('oculto');
   forzando = true;
 }
