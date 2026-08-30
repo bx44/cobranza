@@ -627,7 +627,6 @@ function ticketESCPOS(c) {
 
   var out = [];
   var ESC = 27, GS = 29;
-  out.push(ESC, 116, 16);         // codepage 1252 para acentos
   out.push(ESC, 97, 1);           // centrado
   txt(out, 'RECIBO DE DONATIVO\n');
   txt(out, '--------------------------------\n');
@@ -650,14 +649,14 @@ function ticketESCPOS(c) {
     // el numero al que escribir. Tambien sirve de diagnostico: si ves
     // esta linea pero no el cuadro, la impresora no soporta GS ( k.
     txt(out, 'Escanee o escriba al\n');
-    txt(out, '55 6572 871690\n');
+    txt(out, '657 287 1690\n');
   } else {
-    txt(out, '\nDudas? WhatsApp 55 6572 871690\n');
+    txt(out, '\nDudas? WhatsApp 657 287 1690\n');
   }
 
   txt(out, '\nTizku lemitzvot\n');
   txt(out, 'Este comprobante no es un CFDI\n');
-  txt(out, 'Or Barak - 55 3989 6174\n');
+  txt(out, 'Or Barak - 657 287 1690\n');
   txt(out, '\n\n\n');
   out.push(GS, 86, 66, 0);        // corte
   return new Uint8Array(out);
@@ -672,10 +671,13 @@ function qrESCPOS(out, texto) {
   var datos = [];
   txt(datos, texto);
 
-  // tamano del modulo: 6 de 1-16
-  out.push(GS, 40, 107, 3, 0, 49, 67, 6);
-  // correccion de error nivel H (el mas alto): aguanta papel arrugado
-  out.push(GS, 40, 107, 3, 0, 49, 69, 51);
+  // El tamano del modulo se ajusta al largo: con textos largos un modulo
+  // grande no cabe en los 384 puntos de la impresora y no imprime NADA.
+  var mod = texto.length <= 60 ? 6 : (texto.length <= 110 ? 4 : 3);
+  out.push(GS, 40, 107, 3, 0, 49, 67, mod);
+  // Correccion de error: H (51) aguanta papel arrugado, pero agranda el
+  // codigo. Con textos largos se baja a M (49) para que quepa.
+  out.push(GS, 40, 107, 3, 0, 49, 69, texto.length <= 60 ? 51 : 49);
   // guardar los datos
   var len = datos.length + 3;
   out.push(GS, 40, 107, len & 0xFF, (len >> 8) & 0xFF, 49, 80, 48);
@@ -685,13 +687,20 @@ function qrESCPOS(out, texto) {
   txt(out, '\n');
 }
 
-/** Texto a bytes en Windows-1252, para que salgan los acentos. */
+/**
+ * Texto a bytes para la impresora.
+ *
+ * Se quitan acentos y enes en vez de mandarlos con pagina de codigos:
+ * muchas impresoras baratas ignoran el comando ESC t, y el byte suelto
+ * les desordena la linea completa. "Campana" impreso vale mas que
+ * "Campa" con la fecha encimada.
+ */
 function txt(arr, s) {
-  var mapa = { 'á':225,'é':233,'í':237,'ó':243,'ú':250,'ñ':241,'Á':193,'É':201,
-               'Í':205,'Ó':211,'Ú':218,'Ñ':209,'ü':252,'¿':191,'¡':161,'°':176 };
-  for (var i = 0; i < s.length; i++) {
-    var ch = s.charAt(i);
-    var code = mapa[ch] !== undefined ? mapa[ch] : s.charCodeAt(i);
-    arr.push(code > 255 ? 63 : code);
+  var limpio = String(s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // quita acentos
+    .replace(/\u00f1/g, 'n').replace(/\u00d1/g, 'N');   // ene
+  for (var i = 0; i < limpio.length; i++) {
+    var c = limpio.charCodeAt(i);
+    arr.push(c > 126 ? 63 : c);     // fuera del ASCII imprimible -> "?"
   }
 }
