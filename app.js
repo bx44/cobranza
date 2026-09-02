@@ -405,13 +405,28 @@ function exito(r, d) {
   document.getElementById('errImpr').innerHTML = '';
 
   var m = document.getElementById('okCorreo');
-  if (r.correoEnviado && r.correoEnviado.indexOf('ERROR') !== 0) {
-    m.innerHTML = '✉️ Comprobante enviado a <b>' + r.correoEnviado + '</b>';
+  if (r.email) {
+    m.innerHTML = '<span style="color:#888">✉️ Enviando comprobante a ' + r.email + '…</span>';
   } else if (opMail === 'No quiso') {
     m.textContent = 'No dejó correo.';
   } else {
     m.textContent = 'Sin correo registrado.';
   }
+
+  // El correo, la validación del concepto y el recálculo de saldos corren
+  // aquí, con la pantalla ya visible: el cobrador no espera por nada.
+  api('finalizarCobro', { folio: r.folio, fila: r.fila, nombre: d.nombre })
+    .then(function (fin) {
+      if (fin.correoEnviado && fin.correoEnviado.indexOf('ERROR') !== 0) {
+        m.innerHTML = '✉️ Comprobante enviado a <b>' + fin.correoEnviado + '</b>';
+      } else if (r.email) {
+        m.innerHTML = '<span style="color:#e37400">No se pudo enviar el correo</span>';
+      }
+      if (fin.saldo) { D.saldo = fin.saldo; pintarSaldo(); }
+    })
+    .catch(function () {
+      if (r.email) m.innerHTML = '<span style="color:#e37400">El comprobante se manda en un momento</span>';
+    });
 
   var wa = document.getElementById('okWa');
   if (r.waUrl) { wa.href = r.waUrl; wa.classList.remove('oculto'); }
