@@ -4,8 +4,8 @@
  * Las llamadas a la API NUNCA se cachean: un saldo viejo
  * es peor que ningún saldo.
  */
-const CACHE = 'cobranza-v7';
-const ARCHIVOS = ['./', './index.html', './app.js', './logo.js', './manifest.json'];
+const CACHE = 'cobranza-v8';
+const ARCHIVOS = ['./', './index.html', './app.js', './ventas.js', './logo.js', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
